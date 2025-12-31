@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_bloc_app/features/cart/ui/cart_screen.dart';
 import 'package:flutter_bloc_app/features/home/bloc/home_bloc_bloc.dart';
+import 'package:flutter_bloc_app/features/home/ui/product_card.dart';
 import 'package:flutter_bloc_app/features/wishlist/ui/wishlist_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -13,6 +14,12 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final HomeBlocBloc homeBloc = HomeBlocBloc();
+
+  @override
+  void initState() {
+    homeBloc.add(HomeInitialEvent());
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,6 +38,14 @@ class _HomeScreenState extends State<HomeScreen> {
             context,
             MaterialPageRoute(builder: (context) => CartScreen()),
           );
+        } else if (state is HomeWishlistItemState) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Item was added to wishlist')));
+        } else if (state is HomeCartItemState) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Item was added to cart')));
         }
       },
       builder: (context, state) {
@@ -54,8 +69,35 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
+          body: _buildBody(state, homeBloc),
         );
       },
     );
+  }
+}
+
+Widget _buildBody(HomeState state, HomeBlocBloc homeBloc) {
+  switch (state.runtimeType) {
+    case HomeLoadingState:
+      return Center(child: CircularProgressIndicator());
+
+    case HomeSuccessState:
+      final successState = state as HomeSuccessState;
+
+      return ListView.builder(
+        itemCount: successState.products.length,
+        itemBuilder: (context, index) {
+          return ProductCard(
+            product: successState.products[index],
+            homeBloc: homeBloc,
+          );
+        },
+      );
+
+    case HomeErrorState:
+      return Center(child: Text("Error"));
+
+    default:
+      return SizedBox();
   }
 }
